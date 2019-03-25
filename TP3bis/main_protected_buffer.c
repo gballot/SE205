@@ -133,13 +133,17 @@ int main(int argc, char *argv[]){
 
   pthread_t producers[n_producers];
   pthread_t consumers[n_consumers];
+  int id_producers[n_producers];
+  int id_consumers[n_consumers];
   
   // Create producers and consumers
   for (i=0; i<n_producers; i++) {
-      pthread_create(&producers[i], NULL, main_producer, NULL);
+      id_producers[i] = i;
+      pthread_create(&producers[i], NULL, main_producer, (void *) &id_producers[i]);
   }
   for (i=0; i<n_consumers; i++) {
-      pthread_create(&consumers[i], NULL, main_consumer, NULL);
+      id_consumers[i] = i;
+      pthread_create(&consumers[i], NULL, main_consumer, (void *) &id_consumers[i]);
   }
   
   // Wait for producers and consumers termination
