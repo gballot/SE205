@@ -51,6 +51,7 @@ default : $(PROGS)
 
 clean : 
 	$(RM) $(OBJECTS) $(PROGS) *~
+	rm -r deps
 
 veryclean: clean
 	$(RM) $(PRESOURCES)

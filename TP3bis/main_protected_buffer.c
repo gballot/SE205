@@ -132,18 +132,22 @@ int main(int argc, char *argv[]){
   set_start_time();
 
   pthread_t producers[n_producers];
-  WIP
+  pthread_t consumers[n_consumers];
   
   // Create producers and consumers
   for (i=0; i<n_producers; i++) {
+      pthread_create(&producers[i], NULL, main_producer, NULL);
   }
   for (i=0; i<n_consumers; i++) {
+      pthread_create(&consumers[i], NULL, main_consumer, NULL);
   }
   
   // Wait for producers and consumers termination
   for (i=0; i<n_producers; i++) {
+      pthread_join(producers[i], NULL);
   }
   for (i=0; i<n_consumers; i++) {
+      pthread_join(consumers[i], NULL);
   }
 }
 
