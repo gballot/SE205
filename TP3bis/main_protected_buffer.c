@@ -130,6 +130,9 @@ int main(int argc, char *argv[]){
 
 
   set_start_time();
+
+  pthread_t producers[n_producers];
+  WIP
   
   // Create producers and consumers
   for (i=0; i<n_producers; i++) {
