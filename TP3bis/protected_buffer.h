@@ -9,9 +9,9 @@
 typedef struct {
   long                sem_impl;
   circular_buffer_t * buffer;
-  pthread_mutex_t   * mutex;
-  pthread_cond_t    * not_empty;
-  pthread_cond_t    * not_full;
+  pthread_mutex_t     mutex;
+  pthread_cond_t      not_empty;
+  pthread_cond_t      not_full;
   int                 count;
 } protected_buffer_t;
 
