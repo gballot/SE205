@@ -14,7 +14,6 @@ protected_buffer_t * cond_protected_buffer_init(int length) {
   pthread_mutex_init(&b->mutex, NULL);
   pthread_cond_init(&b->not_empty, NULL);
   pthread_cond_init(&b->not_full, NULL);
-  b->count = 0;
   return b;
 }
 
@@ -28,16 +27,15 @@ void * cond_protected_buffer_get(protected_buffer_t * b){
   
   // Wait until there is a full slot to get data from the unprotected
   // circular buffer (circular_buffer_get).
-  while(b->count <= 0)
+  while(b->buffer->size <= 0)
       pthread_cond_wait(&b->not_empty, &b->mutex);
   
   // Signal or broadcast that an empty slot is available in the
   // unprotected circular buffer (if needed)
-  if (b->count == b->buffer->size)
+  if (b->buffer->size == b->buffer->max_size)
       pthread_cond_broadcast(&b->not_full);
 
-  d = circular_buffer_get(&b->buffer);
-  b->count--;
+  d = circular_buffer_get(b->buffer);
 
   // Leave mutual exclusion
   pthread_mutex_unlock(&b->mutex);
@@ -54,16 +52,15 @@ void cond_protected_buffer_put(protected_buffer_t * b, void * d){
   
   // Wait until there is an empty slot to put data in the unprotected
   // circular buffer (circular_buffer_put).
-  while(b->count >= b->buffer->size)
+  while(b->buffer->size >= b->buffer->max_size)
       pthread_cond_wait(&b->not_full, &b->mutex);
   
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
-  if (b->count == 0)
+  if (b->buffer->size == 0)
       pthread_cond_broadcast(&b->not_empty);
 
   circular_buffer_put(b->buffer, d);
-  b->count++;
 
   // Leave mutual exclusion
   pthread_mutex_unlock(&b->mutex);

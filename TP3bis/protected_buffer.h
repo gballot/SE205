@@ -12,7 +12,6 @@ typedef struct {
   pthread_mutex_t     mutex;
   pthread_cond_t      not_empty;
   pthread_cond_t      not_full;
-  int                 count;
 } protected_buffer_t;
 
 // Initialise the protected buffer structure above. sem_impl specifies
