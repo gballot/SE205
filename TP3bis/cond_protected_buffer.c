@@ -139,7 +139,6 @@ int cond_protected_buffer_add(protected_buffer_t * b, void * d){
 // successful. Otherwise, return NULL.
 void * cond_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstime){
   void * d = NULL;
-  int    rc = -1;
   
   // Enter mutual exclusion
   pthread_mutex_lock(&b->mutex);
@@ -148,8 +147,9 @@ void * cond_protected_buffer_poll(protected_buffer_t * b, struct timespec *absti
   // circular buffer (circular_buffer_put) but waits no longer than
   // the given timeout.
   while(b->buffer->size <= 0) {
-      if (pthread_cond_timedwait(&b->not_full, &b->mutex, abstime)) {
-          return 0;
+      if (pthread_cond_timedwait(&b->not_full, &b->mutex, abstime) == ETIMEDOUT) {
+          pthread_mutex_unlock(&b->mutex);
+          return NULL;
       }
   }
   
@@ -170,14 +170,14 @@ void * cond_protected_buffer_poll(protected_buffer_t * b, struct timespec *absti
 // waits no longer than the given timeout. Return 0 if not
 // successful. Otherwise, return 1.
 int cond_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec * abstime){
-  int rc = -1;
   int done;
   
   // Enter mutual exclusion
   pthread_mutex_lock(&b->mutex);
 
   while(b->buffer->size >= b->buffer->max_size) {
-      if (pthread_cond_timedwait(&b->not_full, &b->mutex, abstime)) {
+      if (pthread_cond_timedwait(&b->not_full, &b->mutex, abstime) == ETIMEDOUT) {
+          pthread_mutex_unlock(&b->mutex);
           return 0;
       }
   }
