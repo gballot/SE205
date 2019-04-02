@@ -11,6 +11,8 @@ typedef struct {
   int             core_pool_size;
   int             max_pool_size;
   int             size;
+  pthread_mutex_t mutex;
+  pthread_t *thread_tab;
 } thread_pool_t;
 
 // Create a thread pool. This pool must be protected against
