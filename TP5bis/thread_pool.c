@@ -51,10 +51,12 @@ int pool_thread_create (thread_pool_t * thread_pool,
       pthread_create(&t, NULL, run, future);
       thread_pool->thread_tab[thread_pool->size] = t;
       thread_pool->size++;
+      pthread_mutex_unlock(&thread_pool->mutex);
+      return done;
   }
   pthread_mutex_unlock(&thread_pool->mutex);
 
-  return done;
+  return -1;
 }
 
 // Decrease thread number and broadcast update.
