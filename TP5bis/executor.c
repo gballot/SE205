@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
-
+#include <unistd.h>
 #include "executor.h"
 #include "utils.h"
 
@@ -71,13 +71,14 @@ void * callable_run (void * arg) {
     struct timespec      ts_deadline;
     struct timeval       tv_deadline; 
 
-    gettimeofday (&tv_deadline, NULL);
-    TIMEVAL_TO_TIMESPEC (&tv_deadline, &ts_deadline);
 
     while (1) {
         while (1) {
             // Protect from concurrent access
             pthread_mutex_lock(&future->mutex);
+            gettimeofday (&tv_deadline, NULL);
+            TIMEVAL_TO_TIMESPEC (&tv_deadline, &ts_deadline);
+            add_millis_to_timespec(&ts_deadline, future->callable->period);
 
             future->result = future->callable->run (future->callable->params);
 
@@ -87,9 +88,13 @@ void * callable_run (void * arg) {
                 pthread_cond_broadcast(&future->var);
                 pthread_mutex_unlock(&future->mutex);
                 break;
+            } else {
+                pthread_mutex_unlock(&future->mutex);
+                sleep(future->callable->period / 1000);
+                // Il faudrait attendre jusqu'à la date ts_deadline au lieux de 
+                // faire un sleep. Parce qu'avec le sleep c'est du fixed delay, 
+                // pas du pixed period...
             }
-            pthread_mutex_unlock(&future->mutex);
-
         }
 
         if (executor->keep_alive_time != 0) {
@@ -100,8 +105,7 @@ void * callable_run (void * arg) {
             struct timespec timeToWait;
             struct timeval now;
             gettimeofday(&now,NULL);
-            timeToWait.tv_sec = now.tv_sec;
-            timeToWait.tv_nsec = 0;
+            TIMEVAL_TO_TIMESPEC (&now, &timeToWait);
             add_millis_to_timespec(&timeToWait, executor->keep_alive_time);
             future = (future_t *) protected_buffer_poll(executor->futures, &timeToWait);
             if (future == NULL) {

@@ -67,7 +67,7 @@ void pool_thread_remove (thread_pool_t * thread_pool) {
       for (int i = 0 ; i < thread_pool->size ; i++) {
           if (null_found)
               thread_pool->thread_tab[i-1] = thread_pool->thread_tab[i];
-          else if (thread_pool->thread_tab[i] == NULL)
+          else if (thread_pool->thread_tab[i] == (pthread_t)NULL)
               null_found = 1;
       }
       if (null_found)
