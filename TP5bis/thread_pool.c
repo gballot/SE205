@@ -61,10 +61,24 @@ int pool_thread_create (thread_pool_t * thread_pool,
 
 // Decrease thread number and broadcast update.
 void pool_thread_remove (thread_pool_t * thread_pool) {
+  pthread_mutex_lock(&thread_pool->mutex);
+  int null_found = 0;
+  if (thread_pool->size > thread_pool->core_pool_size) {
+      for (int i = 0 ; i < thread_pool->size ; i++) {
+          if (null_found)
+              thread_pool->thread_tab[i-1] = thread_pool->thread_tab[i];
+          else if (thread_pool->thread_tab[i] == NULL)
+              null_found = 1;
+      }
+      if (null_found)
+          thread_pool->size--;
+  }
+  pthread_mutex_unlock(&thread_pool->mutex);
 }  
 
 // Wait until thread number equals zero.
 void wait_thread_pool_empty (thread_pool_t * thread_pool) {
-  sleep (20);
+  while(thread_pool->size > 0)
+      sleep (20);
 }  
 

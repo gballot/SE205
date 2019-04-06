@@ -97,7 +97,17 @@ void * callable_run (void * arg) {
             // If the executor is configured to release threads when they
             // are idle for keep_alive_time milliseconds, try to get a new
             // callable / future for at most keep_alive_time milliseconds.
-            if (future == NULL) break;
+            struct timespec timeToWait;
+            struct timeval now;
+            gettimeofday(&now,NULL);
+            timeToWait.tv_sec = now.tv_sec;
+            timeToWait.tv_nsec = 0;
+            add_millis_to_timespec(&timeToWait, executor->keep_alive_time);
+            future = (future_t *) protected_buffer_poll(executor->futures, &timeToWait);
+            if (future == NULL) {
+                pool_thread_remove(executor->thread_pool);
+                break;
+            }
 
         } else {
             // If the executor does not realease inactive thread, just wait
