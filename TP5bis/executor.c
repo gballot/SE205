@@ -34,8 +34,14 @@ future_t * submit_callable (executor_t * executor, callable_t * callable) {
 
     if(executor->thread_pool->size < executor->thread_pool->core_pool_size)
         pool_thread_create(executor->thread_pool, callable_run, future, 0);
-    else
-        protected_buffer_put(executor->futures, future);
+    else {
+        int try_put = protected_buffer_add(executor->futures, future);
+        if (try_put == 0) {
+            int try_force = pool_thread_create(executor->thread_pool, callable_run, future, 1);
+            if (try_force == -1)
+            return NULL;
+        }
+    }
 
     return future;
 }
