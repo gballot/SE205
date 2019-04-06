@@ -32,7 +32,10 @@ future_t * submit_callable (executor_t * executor, callable_t * callable) {
     pthread_mutex_init(&future->mutex, NULL);
     pthread_cond_init(&future->var, NULL);
 
-    pool_thread_create(executor->thread_pool, callable_run, future, 0);
+    if(executor->thread_pool->size < executor->thread_pool->core_pool_size)
+        pool_thread_create(executor->thread_pool, callable_run, future, 0);
+    else
+        protected_buffer_put(executor->futures, future);
 
     return future;
 }
