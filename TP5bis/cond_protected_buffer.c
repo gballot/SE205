@@ -75,18 +75,6 @@ void * cond_protected_buffer_remove(protected_buffer_t * b){
   // Enter mutual exclusion
   pthread_mutex_lock(&b->mutex);
   
-  while(b->buffer->size <= 0) {
-      struct timespec timeToWait;
-      struct timeval now;
-      gettimeofday(&now,NULL);
-      timeToWait.tv_sec = now.tv_sec;
-      timeToWait.tv_nsec = 0;
-      if (pthread_cond_timedwait(&b->not_full, &b->mutex, &timeToWait) == ETIMEDOUT) {
-          pthread_mutex_unlock(&b->mutex);
-          return NULL;
-      }
-  }
-  
   // Signal or broadcast that an empty slot is available in the
   // unprotected circular buffer (if needed)
   if (b->buffer->size == b->buffer->max_size)
@@ -97,8 +85,6 @@ void * cond_protected_buffer_remove(protected_buffer_t * b){
   // Leave mutual exclusion
   pthread_mutex_unlock(&b->mutex);
 
-  d = circular_buffer_get(b->buffer);
-  
   return d;
 }
 
@@ -110,18 +96,6 @@ int cond_protected_buffer_add(protected_buffer_t * b, void * d){
   // Enter mutual exclusion
   pthread_mutex_lock(&b->mutex);
   
-  while(b->buffer->size >= b->buffer->max_size) {
-      struct timespec timeToWait;
-      struct timeval now;
-      gettimeofday(&now,NULL);
-      timeToWait.tv_sec = now.tv_sec;
-      timeToWait.tv_nsec = 0;
-      if (pthread_cond_timedwait(&b->not_full, &b->mutex, &timeToWait) == ETIMEDOUT) {
-          pthread_mutex_unlock(&b->mutex);
-          return 0;
-      }
-  }
-
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
   if (b->buffer->size == 0)
