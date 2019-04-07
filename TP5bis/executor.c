@@ -70,30 +70,35 @@ void * callable_run (void * arg) {
     executor_t         * executor = (executor_t *) future->callable->executor;
     struct timespec      ts_deadline;
     struct timeval       tv_deadline; 
+    pthread_mutex_t      periodic_mutex;
+    pthread_cond_t       periodic_cond;
 
 
     while (1) {
         while (1) {
             // Protect from concurrent access
             pthread_mutex_lock(&future->mutex);
-            gettimeofday (&tv_deadline, NULL);
-            TIMEVAL_TO_TIMESPEC (&tv_deadline, &ts_deadline);
-            add_millis_to_timespec(&ts_deadline, future->callable->period);
-
-            future->result = future->callable->run (future->callable->params);
 
             // When the callable is not periodic, leave first inner loop
             if (future->callable->period == 0) {
+                future->result = future->callable->run (future->callable->params);
                 future->completed = 1;
                 pthread_cond_broadcast(&future->var);
                 pthread_mutex_unlock(&future->mutex);
                 break;
             } else {
+                gettimeofday (&tv_deadline, NULL);
+                TIMEVAL_TO_TIMESPEC (&tv_deadline, &ts_deadline);
+                add_millis_to_timespec(&ts_deadline, future->callable->period);
+
+                future->result = future->callable->run (future->callable->params);
+
+                // waits for ts_deadline
+                pthread_mutex_lock(&periodic_mutex);
+                pthread_cond_timedwait(&periodic_cond, &periodic_mutex, &ts_deadline);
+                pthread_mutex_unlock(&periodic_mutex);
+
                 pthread_mutex_unlock(&future->mutex);
-                sleep(future->callable->period / 1000);
-                // Il faudrait attendre jusqu'à la date ts_deadline au lieux de 
-                // faire un sleep. Parce qu'avec le sleep c'est du fixed delay, 
-                // pas du pixed period...
             }
         }
 
